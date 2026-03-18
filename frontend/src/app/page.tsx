@@ -53,7 +53,7 @@ export default function Home() {
     await loadTracks();
   };
 
-  const handleUpdate = async (id: number, data: UpdateMusicItem) => {
+  const handleUpdate = async (id: string, data: UpdateMusicItem) => {
     await updateTrack(id, data);
     await loadTracks();
   };
@@ -68,13 +68,15 @@ export default function Home() {
     setEditOpen(true);
   };
 
-  const filteredTracks = tracks.filter(
-    (t) =>
-      t.title.toLowerCase().includes(search.toLowerCase()) ||
-      t.artist.toLowerCase().includes(search.toLowerCase()) ||
-      t.genre.toLowerCase().includes(search.toLowerCase()) ||
-      t.key.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTracks = tracks.filter((t) => {
+    const s = search.toLowerCase();
+    return (
+      (t.title || "").toLowerCase().includes(s) ||
+      (t.artist || "").toLowerCase().includes(s) ||
+      (t.genre || "").toLowerCase().includes(s) ||
+      (t.key || "").toLowerCase().includes(s)
+    );
+  });
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">

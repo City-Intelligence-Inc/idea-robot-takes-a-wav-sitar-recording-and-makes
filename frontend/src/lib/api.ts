@@ -1,12 +1,12 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface MusicItem {
-  id: number;
+  id: string;
   title: string;
   artist: string;
-  genre: string;
-  bpm: number;
-  key: string;
+  genre?: string;
+  bpm?: number;
+  key?: string;
 }
 
 export type CreateMusicItem = Omit<MusicItem, "id">;
@@ -42,7 +42,7 @@ export async function createTrack(data: CreateMusicItem): Promise<MusicItem> {
 }
 
 export async function updateTrack(
-  id: number,
+  id: string,
   data: UpdateMusicItem
 ): Promise<MusicItem> {
   return request<MusicItem>(`/music/${id}`, {
@@ -51,7 +51,7 @@ export async function updateTrack(
   });
 }
 
-export async function deleteTrack(id: number): Promise<void> {
+export async function deleteTrack(id: string): Promise<void> {
   await fetch(`${API_BASE}/music/${id}`, {
     method: "DELETE",
   });

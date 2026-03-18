@@ -31,7 +31,7 @@ const defaultGenreColor =
 
 export function TrackCard({ track, onEdit, onDelete, index }: TrackCardProps) {
   const genreColor =
-    genreColors[track.genre.toLowerCase()] || defaultGenreColor;
+    genreColors[(track.genre || "").toLowerCase()] || defaultGenreColor;
 
   return (
     <Card
@@ -64,23 +64,29 @@ export function TrackCard({ track, onEdit, onDelete, index }: TrackCardProps) {
 
             {/* Metadata */}
             <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                variant="outline"
-                className={`bg-gradient-to-r ${genreColor} border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider`}
-              >
-                <Disc3 className="mr-1 h-3 w-3" />
-                {track.genre}
-              </Badge>
+              {track.genre && (
+                <Badge
+                  variant="outline"
+                  className={`bg-gradient-to-r ${genreColor} border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider`}
+                >
+                  <Disc3 className="mr-1 h-3 w-3" />
+                  {track.genre}
+                </Badge>
+              )}
 
-              <div className="flex items-center gap-1 rounded-md bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-400">
-                <Gauge className="h-3 w-3" />
-                <span>{track.bpm} BPM</span>
-              </div>
+              {track.bpm && (
+                <div className="flex items-center gap-1 rounded-md bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-400">
+                  <Gauge className="h-3 w-3" />
+                  <span>{track.bpm} BPM</span>
+                </div>
+              )}
 
-              <div className="flex items-center gap-1 rounded-md bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-400">
-                <KeyRound className="h-3 w-3" />
-                <span>{track.key}</span>
-              </div>
+              {track.key && (
+                <div className="flex items-center gap-1 rounded-md bg-white/[0.05] px-2 py-0.5 text-[10px] text-zinc-400">
+                  <KeyRound className="h-3 w-3" />
+                  <span>{track.key}</span>
+                </div>
+              )}
             </div>
           </div>
 

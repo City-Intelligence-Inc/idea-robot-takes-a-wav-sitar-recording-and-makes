@@ -71,7 +71,7 @@ interface EditTrackDialogProps {
   track: MusicItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: number, data: UpdateMusicItem) => Promise<void>;
+  onSave: (id: string, data: UpdateMusicItem) => Promise<void>;
 }
 
 export function EditTrackDialog({
@@ -92,11 +92,11 @@ export function EditTrackDialog({
   useEffect(() => {
     if (track) {
       setForm({
-        title: track.title,
-        artist: track.artist,
-        genre: track.genre,
-        bpm: String(track.bpm),
-        key: track.key,
+        title: track.title || "",
+        artist: track.artist || "",
+        genre: track.genre || "",
+        bpm: track.bpm ? String(track.bpm) : "",
+        key: track.key || "",
       });
     }
   }, [track]);
