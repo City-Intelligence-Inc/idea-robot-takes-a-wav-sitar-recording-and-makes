@@ -7,6 +7,11 @@ export interface MusicItem {
   genre?: string;
   bpm?: number;
   key?: string;
+  status?: string;
+  taal?: string;
+  output_s3_key?: string;
+  input_filename?: string;
+  created_at?: string;
 }
 
 export type CreateMusicItem = Omit<MusicItem, "id">;

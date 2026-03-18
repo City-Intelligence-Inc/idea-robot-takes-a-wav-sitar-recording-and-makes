@@ -1,10 +1,12 @@
 "use client";
 
-import { Music, Disc3, Gauge, KeyRound, Pencil, Trash2 } from "lucide-react";
+import { Music, Disc3, Gauge, KeyRound, Pencil, Trash2, Download, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { MusicItem } from "@/lib/api";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface TrackCardProps {
   track: MusicItem;
@@ -33,6 +35,14 @@ export function TrackCard({ track, onEdit, onDelete, index }: TrackCardProps) {
   const genreColor =
     genreColors[(track.genre || "").toLowerCase()] || defaultGenreColor;
 
+  const isProcessed = !!track.output_s3_key;
+
+  const handleDownload = () => {
+    if (track.output_s3_key) {
+      window.open(`${API_BASE}/process/${track.id}/download`, "_blank");
+    }
+  };
+
   return (
     <Card
       className="group relative overflow-hidden border-white/[0.06] bg-white/[0.03] backdrop-blur-sm transition-all duration-300 hover:border-violet-500/30 hover:bg-white/[0.06] hover:shadow-lg hover:shadow-violet-500/5"
@@ -54,16 +64,35 @@ export function TrackCard({ track, onEdit, onDelete, index }: TrackCardProps) {
               </div>
               <div className="min-w-0">
                 <h3 className="truncate text-sm font-semibold text-white">
-                  {track.title}
+                  {track.title || track.input_filename || "Untitled"}
                 </h3>
                 <p className="truncate text-xs text-zinc-400">
-                  {track.artist}
+                  {track.artist || "Unknown artist"}
                 </p>
               </div>
             </div>
 
             {/* Metadata */}
             <div className="flex flex-wrap items-center gap-2">
+              {isProcessed && track.status === "completed" && (
+                <Badge
+                  variant="outline"
+                  className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border-emerald-500/30 border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+                >
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                  Processed
+                </Badge>
+              )}
+
+              {track.taal && (
+                <Badge
+                  variant="outline"
+                  className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-500/30 border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+                >
+                  {track.taal}
+                </Badge>
+              )}
+
               {track.genre && (
                 <Badge
                   variant="outline"
@@ -88,6 +117,21 @@ export function TrackCard({ track, onEdit, onDelete, index }: TrackCardProps) {
                 </div>
               )}
             </div>
+
+            {/* Download button for processed tracks */}
+            {isProcessed && track.status === "completed" && (
+              <div className="mt-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 rounded-md bg-gradient-to-r from-violet-600/20 to-purple-600/20 px-3 text-[11px] font-medium text-violet-300 hover:from-violet-600/30 hover:to-purple-600/30 hover:text-violet-200"
+                  onClick={handleDownload}
+                >
+                  <Download className="h-3 w-3" />
+                  Download Sitar + Tabla WAV
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
