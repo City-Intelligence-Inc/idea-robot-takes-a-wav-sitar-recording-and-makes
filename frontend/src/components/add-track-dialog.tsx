@@ -84,9 +84,27 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
     setLoading(true);
     setProgressPct(0);
     setStage("upload");
-    setProgress("Uploading file...");
+    setProgress("Waking up server...");
 
     try {
+      // Warm up the server first (App Runner cold start can 503)
+      console.log("[Fayez] Warming up backend...");
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const warm = await fetch(`${API_BASE}/health`);
+          if (warm.ok) {
+            console.log(`[Fayez] Backend warm (attempt ${attempt + 1})`);
+            break;
+          }
+        } catch {
+          console.log(`[Fayez] Warmup attempt ${attempt + 1} failed, retrying...`);
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+
+      setProgress("Uploading file...");
+      console.log(`[Fayez] Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
+
       const formData = new FormData();
       formData.append("file", file);
       formData.append("taal", taal);
@@ -118,18 +136,32 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
         );
       }
 
+      console.log(`[Fayez] POST ${API_BASE}/process/ — starting fetch`);
+      const startTime = Date.now();
+
       const res = await fetch(`${API_BASE}/process/`, {
         method: "POST",
         body: formData,
       });
 
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
       // Clear staged timers
       timers.forEach(clearTimeout);
 
+      console.log(`[Fayez] Response: ${res.status} ${res.statusText} (${elapsed}s)`);
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Upload failed" }));
-        throw new Error(err.detail || "Upload failed");
+        const errBody = await res.text().catch(() => "no body");
+        console.error(`[Fayez] Error response body:`, errBody);
+        let detail = "Upload failed";
+        try { detail = JSON.parse(errBody).detail || detail; } catch { /* */ }
+        throw new Error(`${res.status}: ${detail}`);
       }
+
+      const result = await res.json();
+      console.log(`[Fayez] Success! Job ID: ${result.id}, Status: ${result.status}`);
+      console.log(`[Fayez] Analysis:`, result.analysis);
 
       setProgressPct(100);
       setStage("done");
@@ -141,7 +173,9 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
       setOpen(false);
       await onAdd();
     } catch (err) {
-      setProgress(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      console.error(`[Fayez] Processing failed:`, err);
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setProgress(`Error: ${msg}`);
     } finally {
       setLoading(false);
     }
