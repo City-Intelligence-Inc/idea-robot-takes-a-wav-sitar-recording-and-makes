@@ -21,6 +21,87 @@ dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
 table = dynamodb.Table(TABLE_NAME)
 
 
+@router.post("/upload-url")
+def get_upload_url(filename: str = "recording.wav"):
+    """Get a presigned S3 URL so the browser can upload directly to S3."""
+    job_id = str(uuid.uuid4())
+    input_key = f"inputs/{job_id}.wav"
+
+    presigned = s3.generate_presigned_url(
+        "put_object",
+        Params={
+            "Bucket": S3_BUCKET,
+            "Key": input_key,
+            "ContentType": "audio/wav",
+        },
+        ExpiresIn=3600,
+    )
+    return {
+        "job_id": job_id,
+        "upload_url": presigned,
+        "input_key": input_key,
+        "filename": filename,
+    }
+
+
+@router.post("/run/{job_id}")
+def run_processing(
+    job_id: str,
+    taal: str = "teentaal",
+    tabla_level: float = 0.6,
+    reverb_level: float = 0.3,
+    filename: str = "recording.wav",
+):
+    """Process an already-uploaded S3 file. Called after browser uploads directly to S3."""
+    import json
+    import numpy as np
+
+    if taal not in VALID_TAALS:
+        raise HTTPException(status_code=400, detail=f"Unknown taal '{taal}'. Choose from: {VALID_TAALS}")
+
+    input_key = f"inputs/{job_id}.wav"
+    output_key = f"outputs/{job_id}.wav"
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Download input from S3
+    try:
+        s3_obj = s3.get_object(Bucket=S3_BUCKET, Key=input_key)
+        input_bytes = s3_obj["Body"].read()
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail=f"Input file not found in S3: {exc}")
+
+    # Process
+    try:
+        output_bytes, analysis = process_sitar_to_tabla(
+            input_bytes,
+            taal=taal,
+            tabla_level=tabla_level,
+            reverb=reverb_level,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Processing failed: {exc}")
+
+    # Upload output
+    s3.upload_fileobj(io.BytesIO(output_bytes), S3_BUCKET, output_key)
+
+    # Save to DynamoDB
+    record = {
+        "id": job_id,
+        "input_s3_key": input_key,
+        "output_s3_key": output_key,
+        "input_filename": filename,
+        "taal": taal,
+        "tabla_level": str(tabla_level),
+        "reverb": str(reverb_level),
+        "status": "completed",
+        "created_at": now,
+        "analysis": json.dumps(analysis),
+    }
+    table.put_item(Item=record)
+    record["analysis"] = analysis
+    return record
+
+
 @router.post("/", status_code=201)
 async def process_audio(
     file: UploadFile = File(...),

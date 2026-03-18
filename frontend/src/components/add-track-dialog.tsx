@@ -83,11 +83,11 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
 
     setLoading(true);
     setProgressPct(0);
-    setStage("upload");
+    setStage("warmup");
     setProgress("Waking up server...");
 
     try {
-      // Warm up the server first (App Runner cold start can 503)
+      // Step 0: Warm up backend
       console.log("[Fayez] Warming up backend...");
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
@@ -102,31 +102,80 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
         }
       }
 
-      setProgress("Uploading file...");
-      console.log(`[Fayez] Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
+      // Step 1: Get presigned upload URL
+      setStage("upload");
+      setProgressPct(5);
+      setProgress("Getting upload URL...");
+      console.log(`[Fayez] Getting presigned URL for ${file.name}`);
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("taal", taal);
-      formData.append("tabla_level", tablaLevel);
-      formData.append("reverb", reverb);
+      const urlRes = await fetch(
+        `${API_BASE}/process/upload-url?filename=${encodeURIComponent(file.name)}`,
+        { method: "POST" }
+      );
+      if (!urlRes.ok) throw new Error("Failed to get upload URL");
+      const { job_id, upload_url } = await urlRes.json();
+      console.log(`[Fayez] Got presigned URL, job_id: ${job_id}`);
 
-      // Simulate staged progress since the backend does it all in one request
-      const stages = [
-        { pct: 15, ms: 500, stage: "upload", msg: "Uploading to server..." },
-        { pct: 25, ms: 2000, stage: "upload", msg: "Saving to S3..." },
-        { pct: 35, ms: 4000, stage: "analyze", msg: "Detecting beats & tempo..." },
-        { pct: 45, ms: 8000, stage: "analyze", msg: "Classifying sections (alap, jod, jhala)..." },
-        { pct: 55, ms: 15000, stage: "analyze", msg: "Finding tonic note..." },
-        { pct: 65, ms: 25000, stage: "generate", msg: "Generating tabla pattern..." },
-        { pct: 75, ms: 40000, stage: "generate", msg: "Placing tabla strokes on beats..." },
-        { pct: 82, ms: 60000, stage: "mix", msg: "Mixing sitar + tabla tracks..." },
-        { pct: 88, ms: 90000, stage: "mix", msg: "Adding reverb & finalizing..." },
-        { pct: 92, ms: 120000, stage: "save", msg: "Uploading output to S3..." },
+      // Step 2: Upload file directly to S3 with XHR for progress tracking
+      setProgressPct(8);
+      setProgress(`Uploading ${(file.size / 1024 / 1024).toFixed(0)} MB to S3...`);
+      console.log(`[Fayez] Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB) directly to S3`);
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", upload_url);
+        xhr.setRequestHeader("Content-Type", "audio/wav");
+
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const uploadPct = Math.round((e.loaded / e.total) * 100);
+            // Map upload 0-100% to progress 8-45%
+            const mappedPct = 8 + Math.round(uploadPct * 0.37);
+            setProgressPct(mappedPct);
+            const loadedMB = (e.loaded / 1024 / 1024).toFixed(1);
+            const totalMB = (e.total / 1024 / 1024).toFixed(1);
+            setProgress(`Uploading to S3: ${loadedMB} / ${totalMB} MB (${uploadPct}%)`);
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            console.log(`[Fayez] S3 upload complete`);
+            resolve();
+          } else {
+            console.error(`[Fayez] S3 upload failed: ${xhr.status} ${xhr.statusText}`);
+            reject(new Error(`S3 upload failed: ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => {
+          console.error(`[Fayez] S3 upload network error`);
+          reject(new Error("S3 upload network error"));
+        };
+
+        xhr.send(file);
+      });
+
+      // Step 3: Trigger processing on the backend
+      setStage("analyze");
+      setProgressPct(48);
+      setProgress("Starting analysis...");
+      console.log(`[Fayez] Triggering processing for job ${job_id}`);
+
+      // Simulated progress for the processing phase
+      const processingStages = [
+        { pct: 52, ms: 2000, stage: "analyze", msg: "Detecting beats & tempo..." },
+        { pct: 58, ms: 6000, stage: "analyze", msg: "Classifying sections (alap, jod, jhala)..." },
+        { pct: 64, ms: 12000, stage: "analyze", msg: "Finding tonic note..." },
+        { pct: 72, ms: 20000, stage: "generate", msg: "Generating tabla pattern..." },
+        { pct: 78, ms: 35000, stage: "generate", msg: "Placing tabla strokes on beats..." },
+        { pct: 84, ms: 55000, stage: "mix", msg: "Mixing sitar + tabla tracks..." },
+        { pct: 89, ms: 80000, stage: "mix", msg: "Adding reverb & finalizing..." },
+        { pct: 93, ms: 110000, stage: "save", msg: "Saving output to S3..." },
       ];
 
       const timers: ReturnType<typeof setTimeout>[] = [];
-      for (const s of stages) {
+      for (const s of processingStages) {
         timers.push(
           setTimeout(() => {
             setProgressPct(s.pct);
@@ -136,36 +185,33 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
         );
       }
 
-      console.log(`[Fayez] POST ${API_BASE}/process/ — starting fetch`);
       const startTime = Date.now();
+      const processRes = await fetch(
+        `${API_BASE}/process/run/${job_id}?taal=${taal}&tabla_level=${tablaLevel}&reverb_level=${reverb}&filename=${encodeURIComponent(file.name)}`,
+        { method: "POST" }
+      );
 
-      const res = await fetch(`${API_BASE}/process/`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-
-      // Clear staged timers
       timers.forEach(clearTimeout);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`[Fayez] Processing response: ${processRes.status} (${elapsed}s)`);
 
-      console.log(`[Fayez] Response: ${res.status} ${res.statusText} (${elapsed}s)`);
-
-      if (!res.ok) {
-        const errBody = await res.text().catch(() => "no body");
-        console.error(`[Fayez] Error response body:`, errBody);
-        let detail = "Upload failed";
+      if (!processRes.ok) {
+        const errBody = await processRes.text().catch(() => "no body");
+        console.error(`[Fayez] Processing error:`, errBody);
+        let detail = "Processing failed";
         try { detail = JSON.parse(errBody).detail || detail; } catch { /* */ }
-        throw new Error(`${res.status}: ${detail}`);
+        throw new Error(detail);
       }
 
-      const result = await res.json();
-      console.log(`[Fayez] Success! Job ID: ${result.id}, Status: ${result.status}`);
-      console.log(`[Fayez] Analysis:`, result.analysis);
+      const result = await processRes.json();
+      console.log(`[Fayez] Done! Job: ${result.id}, Status: ${result.status}`);
 
       setProgressPct(100);
       setStage("done");
       setProgress("Done! Sitar + Tabla track created.");
+
+      // Wait a moment to show success, then close
+      await new Promise((r) => setTimeout(r, 1500));
       setFile(null);
       setTaal("teentaal");
       setTablaLevel("0.6");
@@ -173,8 +219,9 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
       setOpen(false);
       await onAdd();
     } catch (err) {
-      console.error(`[Fayez] Processing failed:`, err);
+      console.error(`[Fayez] Failed:`, err);
       const msg = err instanceof Error ? err.message : "Unknown error";
+      setStage("error");
       setProgress(`Error: ${msg}`);
     } finally {
       setLoading(false);
@@ -268,10 +315,7 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-zinc-400">Taal</Label>
-              <Select
-                value={taal}
-                onValueChange={(v) => v && setTaal(v)}
-              >
+              <Select value={taal} onValueChange={(v) => v && setTaal(v)}>
                 <SelectTrigger className="h-8 w-full border-white/10 bg-white/5 text-xs text-white">
                   <SelectValue />
                 </SelectTrigger>
@@ -313,7 +357,7 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
           </div>
 
           {/* Progress */}
-          {loading && progress && (
+          {loading && (
             <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
               {/* Stage indicators */}
               <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider">
@@ -325,7 +369,7 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
                       key={s}
                       className={`transition-colors ${
                         s === stage
-                          ? "font-bold text-violet-400"
+                          ? stage === "error" ? "font-bold text-red-400" : "font-bold text-violet-400"
                           : thisIdx < currentIdx
                           ? "text-emerald-400"
                           : "text-zinc-600"
@@ -343,6 +387,8 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
                   className={`h-full rounded-full transition-all duration-700 ease-out ${
                     stage === "done"
                       ? "bg-gradient-to-r from-emerald-500 to-green-500"
+                      : stage === "error"
+                      ? "bg-gradient-to-r from-red-500 to-red-600"
                       : "bg-gradient-to-r from-violet-500 to-purple-500"
                   }`}
                   style={{ width: `${progressPct}%` }}
@@ -351,7 +397,9 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
 
               {/* Message */}
               <div className="flex items-center justify-between">
-                <p className="text-xs text-zinc-400">{progress}</p>
+                <p className={`text-xs ${stage === "error" ? "text-red-400" : "text-zinc-400"}`}>
+                  {progress}
+                </p>
                 <span className="text-xs font-mono text-zinc-500">{progressPct}%</span>
               </div>
             </div>
