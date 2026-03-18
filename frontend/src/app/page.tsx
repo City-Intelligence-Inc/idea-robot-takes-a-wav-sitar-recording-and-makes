@@ -117,16 +117,24 @@ export default function Home() {
             </h1>
 
             <p
-              className="animate-fade-in-up mt-3 text-base text-zinc-400 sm:text-lg"
+              className="animate-fade-in-up mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base"
               style={{ animationDelay: "200ms" }}
             >
-              Your Music Library
+              An AI-powered audio processing system that takes a raw <span className="text-violet-400">.wav sitar recording</span>, analyzes its rhythmic structure — detecting beats, tempo, tonic, and classifying sections (alap, jod, jhala) — then algorithmically generates a synchronized <span className="text-violet-400">tabla accompaniment</span> in a chosen taal and mixes both tracks into a single output file.
+            </p>
+            <p
+              className="animate-fade-in-up mt-2 text-xs text-zinc-500 sm:text-sm"
+              style={{ animationDelay: "250ms" }}
+            >
+              Built with FastAPI, librosa, pretty_midi, and NumPy. Deployed on AWS App Runner + DynamoDB + S3.
+              <br />
+              <span className="text-zinc-600">ENGLISH 106A — Ari Choudhary</span>
             </p>
 
             {/* Decorative line */}
             <div
               className="animate-fade-in-up mt-8 h-[1px] w-24 bg-gradient-to-r from-transparent via-violet-500/50 to-transparent"
-              style={{ animationDelay: "300ms" }}
+              style={{ animationDelay: "350ms" }}
             />
           </div>
         </header>
