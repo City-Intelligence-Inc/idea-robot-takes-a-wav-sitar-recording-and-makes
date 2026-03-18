@@ -12,6 +12,7 @@ export interface MusicItem {
   output_s3_key?: string;
   input_filename?: string;
   created_at?: string;
+  analysis?: string | Record<string, unknown>;
 }
 
 export type CreateMusicItem = Omit<MusicItem, "id">;

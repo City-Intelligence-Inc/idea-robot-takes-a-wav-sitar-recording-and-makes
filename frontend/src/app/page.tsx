@@ -14,13 +14,12 @@ import { Button } from "@/components/ui/button";
 import { TrackCard } from "@/components/track-card";
 import { AddTrackDialog } from "@/components/add-track-dialog";
 import { EditTrackDialog } from "@/components/edit-track-dialog";
+import { TrackDetailDialog } from "@/components/track-detail-dialog";
 import {
   fetchTracks,
-  createTrack,
   updateTrack,
   deleteTrack,
   type MusicItem,
-  type CreateMusicItem,
   type UpdateMusicItem,
 } from "@/lib/api";
 
@@ -31,6 +30,8 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [editTrack, setEditTrack] = useState<MusicItem | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [detailTrack, setDetailTrack] = useState<MusicItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const loadTracks = useCallback(async () => {
     try {
@@ -48,8 +49,7 @@ export default function Home() {
     loadTracks();
   }, [loadTracks]);
 
-  const handleAdd = async (data: CreateMusicItem) => {
-    await createTrack(data);
+  const handleAdd = async () => {
     await loadTracks();
   };
 
@@ -194,12 +194,23 @@ export default function Home() {
                   index={i}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onView={(t) => {
+                    setDetailTrack(t);
+                    setDetailOpen(true);
+                  }}
                 />
               ))}
             </div>
           )}
         </main>
       </div>
+
+      {/* Detail Dialog */}
+      <TrackDetailDialog
+        track={detailTrack}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
 
       {/* Edit Dialog */}
       <EditTrackDialog

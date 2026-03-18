@@ -12,6 +12,7 @@ interface TrackCardProps {
   track: MusicItem;
   onEdit: (track: MusicItem) => void;
   onDelete: (track: MusicItem) => void;
+  onView?: (track: MusicItem) => void;
   index: number;
 }
 
@@ -31,7 +32,7 @@ const genreColors: Record<string, string> = {
 const defaultGenreColor =
   "from-violet-500/20 to-purple-500/20 text-violet-300 border-violet-500/30";
 
-export function TrackCard({ track, onEdit, onDelete, index }: TrackCardProps) {
+export function TrackCard({ track, onEdit, onDelete, onView, index }: TrackCardProps) {
   const genreColor =
     genreColors[(track.genre || "").toLowerCase()] || defaultGenreColor;
 
@@ -54,7 +55,7 @@ export function TrackCard({ track, onEdit, onDelete, index }: TrackCardProps) {
       {/* Gradient line at top */}
       <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-violet-500/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-      <CardContent className="p-5">
+      <CardContent className="p-5 cursor-pointer" onClick={() => onView?.(track)}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             {/* Title & Artist */}
