@@ -128,7 +128,7 @@ export default function Home() {
             >
               Built with FastAPI, librosa, pretty_midi, and NumPy. Deployed on AWS App Runner + DynamoDB + S3.
               <br />
-              <span className="text-zinc-600">ENGLISH 106A — Ari Choudhary</span>
+              <span className="text-zinc-600">ENGLISH 106A — Fayez Navid</span>
             </p>
 
             {/* Decorative line */}
