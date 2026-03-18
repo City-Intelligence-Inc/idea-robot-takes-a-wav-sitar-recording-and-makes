@@ -44,6 +44,73 @@ def get_upload_url(filename: str = "recording.wav"):
     }
 
 
+import threading
+
+def _run_processing_bg(job_id: str, taal: str, tabla_level: float, reverb_level: float, filename: str):
+    """Background worker that does the actual processing."""
+    import json
+
+    input_key = f"inputs/{job_id}.wav"
+    output_key = f"outputs/{job_id}.wav"
+
+    try:
+        # Update status to processing
+        table.update_item(
+            Key={"id": job_id},
+            UpdateExpression="SET #s = :s",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "processing"},
+        )
+
+        # Download input from S3
+        s3_obj = s3.get_object(Bucket=S3_BUCKET, Key=input_key)
+        input_bytes = s3_obj["Body"].read()
+
+        table.update_item(
+            Key={"id": job_id},
+            UpdateExpression="SET #s = :s",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "analyzing"},
+        )
+
+        # Process
+        output_bytes, analysis = process_sitar_to_tabla(
+            input_bytes,
+            taal=taal,
+            tabla_level=tabla_level,
+            reverb=reverb_level,
+        )
+
+        table.update_item(
+            Key={"id": job_id},
+            UpdateExpression="SET #s = :s",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "saving"},
+        )
+
+        # Upload output
+        s3.upload_fileobj(io.BytesIO(output_bytes), S3_BUCKET, output_key)
+
+        # Mark completed
+        table.update_item(
+            Key={"id": job_id},
+            UpdateExpression="SET #s = :s, output_s3_key = :o, analysis = :a",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={
+                ":s": "completed",
+                ":o": output_key,
+                ":a": json.dumps(analysis),
+            },
+        )
+    except Exception as exc:
+        table.update_item(
+            Key={"id": job_id},
+            UpdateExpression="SET #s = :s, error_message = :e",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "failed", ":e": str(exc)},
+        )
+
+
 @router.post("/run/{job_id}")
 def run_processing(
     job_id: str,
@@ -52,54 +119,55 @@ def run_processing(
     reverb_level: float = 0.3,
     filename: str = "recording.wav",
 ):
-    """Process an already-uploaded S3 file. Called after browser uploads directly to S3."""
-    import json
-    import numpy as np
-
+    """Start processing an already-uploaded S3 file. Returns immediately, processes in background."""
     if taal not in VALID_TAALS:
         raise HTTPException(status_code=400, detail=f"Unknown taal '{taal}'. Choose from: {VALID_TAALS}")
 
     input_key = f"inputs/{job_id}.wav"
-    output_key = f"outputs/{job_id}.wav"
     now = datetime.now(timezone.utc).isoformat()
 
-    # Download input from S3
+    # Verify file exists in S3
     try:
-        s3_obj = s3.get_object(Bucket=S3_BUCKET, Key=input_key)
-        input_bytes = s3_obj["Body"].read()
-    except Exception as exc:
-        raise HTTPException(status_code=404, detail=f"Input file not found in S3: {exc}")
+        s3.head_object(Bucket=S3_BUCKET, Key=input_key)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Input file not found in S3")
 
-    # Process
-    try:
-        output_bytes, analysis = process_sitar_to_tabla(
-            input_bytes,
-            taal=taal,
-            tabla_level=tabla_level,
-            reverb=reverb_level,
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Processing failed: {exc}")
-
-    # Upload output
-    s3.upload_fileobj(io.BytesIO(output_bytes), S3_BUCKET, output_key)
-
-    # Save to DynamoDB
+    # Create initial DB record
     record = {
         "id": job_id,
         "input_s3_key": input_key,
-        "output_s3_key": output_key,
         "input_filename": filename,
         "taal": taal,
         "tabla_level": str(tabla_level),
         "reverb": str(reverb_level),
-        "status": "completed",
+        "status": "queued",
         "created_at": now,
-        "analysis": json.dumps(analysis),
     }
     table.put_item(Item=record)
-    record["analysis"] = analysis
-    return record
+
+    # Start processing in background thread
+    thread = threading.Thread(
+        target=_run_processing_bg,
+        args=(job_id, taal, tabla_level, reverb_level, filename),
+        daemon=True,
+    )
+    thread.start()
+
+    return {"id": job_id, "status": "queued"}
+
+
+@router.get("/status/{job_id}")
+def get_job_status(job_id: str):
+    """Poll this to check processing progress."""
+    response = table.get_item(Key={"id": job_id})
+    item = response.get("Item")
+    if not item:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {
+        "id": item["id"],
+        "status": item.get("status", "unknown"),
+        "error_message": item.get("error_message"),
+    }
 
 
 @router.post("/", status_code=201)

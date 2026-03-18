@@ -156,55 +156,98 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
         xhr.send(file);
       });
 
-      // Step 3: Trigger processing on the backend
+      // Step 3: Start processing (returns immediately, runs in background)
       setStage("analyze");
       setProgressPct(48);
-      setProgress("Starting analysis...");
+      setProgress("Starting processing...");
       console.log(`[Fayez] Triggering processing for job ${job_id}`);
 
-      // Simulated progress for the processing phase
-      const processingStages = [
-        { pct: 52, ms: 2000, stage: "analyze", msg: "Detecting beats & tempo..." },
-        { pct: 58, ms: 6000, stage: "analyze", msg: "Classifying sections (alap, jod, jhala)..." },
-        { pct: 64, ms: 12000, stage: "analyze", msg: "Finding tonic note..." },
-        { pct: 72, ms: 20000, stage: "generate", msg: "Generating tabla pattern..." },
-        { pct: 78, ms: 35000, stage: "generate", msg: "Placing tabla strokes on beats..." },
-        { pct: 84, ms: 55000, stage: "mix", msg: "Mixing sitar + tabla tracks..." },
-        { pct: 89, ms: 80000, stage: "mix", msg: "Adding reverb & finalizing..." },
-        { pct: 93, ms: 110000, stage: "save", msg: "Saving output to S3..." },
-      ];
-
-      const timers: ReturnType<typeof setTimeout>[] = [];
-      for (const s of processingStages) {
-        timers.push(
-          setTimeout(() => {
-            setProgressPct(s.pct);
-            setStage(s.stage);
-            setProgress(s.msg);
-          }, s.ms)
-        );
-      }
-
-      const startTime = Date.now();
       const processRes = await fetch(
         `${API_BASE}/process/run/${job_id}?taal=${taal}&tabla_level=${tablaLevel}&reverb_level=${reverb}&filename=${encodeURIComponent(file.name)}`,
         { method: "POST" }
       );
 
-      timers.forEach(clearTimeout);
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`[Fayez] Processing response: ${processRes.status} (${elapsed}s)`);
-
       if (!processRes.ok) {
         const errBody = await processRes.text().catch(() => "no body");
-        console.error(`[Fayez] Processing error:`, errBody);
-        let detail = "Processing failed";
+        console.error(`[Fayez] Start error:`, errBody);
+        let detail = "Failed to start processing";
         try { detail = JSON.parse(errBody).detail || detail; } catch { /* */ }
         throw new Error(detail);
       }
 
-      const result = await processRes.json();
-      console.log(`[Fayez] Done! Job: ${result.id}, Status: ${result.status}`);
+      console.log(`[Fayez] Processing started, polling for status...`);
+
+      // Step 4: Poll for status
+      const statusMessages: Record<string, { pct: number; stage: string; msg: string }> = {
+        queued: { pct: 48, stage: "analyze", msg: "Queued, waiting to start..." },
+        processing: { pct: 55, stage: "analyze", msg: "Downloading from S3 & loading audio..." },
+        analyzing: { pct: 65, stage: "analyze", msg: "Detecting beats, classifying sections, finding tonic..." },
+        saving: { pct: 88, stage: "save", msg: "Uploading output to S3..." },
+        completed: { pct: 100, stage: "done", msg: "Done! Sitar + Tabla track created." },
+        failed: { pct: 0, stage: "error", msg: "Processing failed" },
+      };
+
+      let pollCount = 0;
+      // Gradually increase progress while analyzing (the longest phase)
+      const analyzingSteps = [
+        { pct: 58, msg: "Detecting beats & tempo..." },
+        { pct: 62, msg: "Classifying sections (alap, jod, jhala)..." },
+        { pct: 67, msg: "Finding tonic note..." },
+        { pct: 72, msg: "Generating tabla pattern..." },
+        { pct: 76, msg: "Placing tabla strokes on beats..." },
+        { pct: 80, msg: "Mixing sitar + tabla tracks..." },
+        { pct: 84, msg: "Adding reverb & finalizing..." },
+      ];
+
+      while (true) {
+        await new Promise((r) => setTimeout(r, 5000));
+        pollCount++;
+
+        try {
+          const statusRes = await fetch(`${API_BASE}/process/status/${job_id}`);
+          const statusData = await statusRes.json();
+          const s = statusData.status || "unknown";
+          console.log(`[Fayez] Poll #${pollCount}: status=${s}`);
+
+          if (s === "completed") {
+            setProgressPct(100);
+            setStage("done");
+            setProgress("Done! Sitar + Tabla track created.");
+            break;
+          }
+
+          if (s === "failed") {
+            throw new Error(statusData.error_message || "Processing failed on server");
+          }
+
+          // Show gradual progress during analyzing phase
+          if (s === "analyzing") {
+            const stepIdx = Math.min(pollCount - 1, analyzingSteps.length - 1);
+            const step = analyzingSteps[stepIdx];
+            setProgressPct(step.pct);
+            setStage("analyze");
+            setProgress(step.msg);
+          } else {
+            const info = statusMessages[s] || statusMessages.queued;
+            setProgressPct(info.pct);
+            setStage(info.stage);
+            setProgress(info.msg);
+          }
+        } catch (pollErr) {
+          // Network errors during polling are OK, keep trying
+          if (pollErr instanceof Error && pollErr.message.includes("Processing failed")) {
+            throw pollErr;
+          }
+          console.log(`[Fayez] Poll #${pollCount} network error, retrying...`);
+        }
+
+        // Timeout after 15 minutes
+        if (pollCount > 180) {
+          throw new Error("Processing timed out after 15 minutes");
+        }
+      }
+
+      console.log(`[Fayez] Done! Job: ${job_id}`);
 
       setProgressPct(100);
       setStage("done");
