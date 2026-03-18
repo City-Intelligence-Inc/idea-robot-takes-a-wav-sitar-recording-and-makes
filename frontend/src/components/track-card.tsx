@@ -1,6 +1,6 @@
 "use client";
 
-import { Music, Disc3, Gauge, KeyRound, Pencil, Trash2, Download, CheckCircle2 } from "lucide-react";
+import { Music, Disc3, Gauge, KeyRound, Pencil, Trash2, Download, CheckCircle2, BarChart3 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,6 +82,16 @@ export function TrackCard({ track, onEdit, onDelete, onView, index }: TrackCardP
                 >
                   <CheckCircle2 className="mr-1 h-3 w-3" />
                   Processed
+                </Badge>
+              )}
+
+              {track.analysis && (
+                <Badge
+                  variant="outline"
+                  className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border-cyan-500/30 border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+                >
+                  <BarChart3 className="mr-1 h-3 w-3" />
+                  Analysis Saved
                 </Badge>
               )}
 
