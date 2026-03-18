@@ -15,69 +15,57 @@ import {
   Play,
   Pause,
   SkipBack,
-  Volume2,
 } from "lucide-react";
 
 const S3 = "https://fayez-app-audio.s3.us-east-1.amazonaws.com";
-
-const REC = {
-  inputUrl: `${S3}/inputs/d6a42e1e-e0ce-4c9f-8c41-2d2715977338.wav`,
-  outputUrl: `${S3}/outputs/d6a42e1e-e0ce-4c9f-8c41-2d2715977338.wav`,
-  inputUrl2: `${S3}/inputs/254f949b-d8a0-4794-affc-c4e3207a6b34.wav`,
-  outputUrl2: `${S3}/outputs/254f949b-d8a0-4794-affc-c4e3207a6b34.wav`,
-};
-
-const TAAL = [
-  { bol: "dha", bass: true }, { bol: "dhin", bass: true }, { bol: "dhin", bass: true }, { bol: "dha", bass: true },
-  { bol: "dha", bass: true }, { bol: "dhin", bass: true }, { bol: "dhin", bass: true }, { bol: "dha", bass: true },
-  { bol: "dha", bass: false }, { bol: "tin", bass: false }, { bol: "tin", bass: false }, { bol: "ta", bass: false },
-  { bol: "ta", bass: false }, { bol: "dhin", bass: true }, { bol: "dhin", bass: true }, { bol: "dha", bass: true },
-];
 
 export default function Home() {
   const [activeRec, setActiveRec] = useState(0);
   const [activeSection, setActiveSection] = useState(1);
 
-  const inputSrc = activeRec === 0 ? REC.inputUrl : REC.inputUrl2;
-  const outputSrc = activeRec === 0 ? REC.outputUrl : REC.outputUrl2;
+  const inputSrc = activeRec === 0
+    ? `${S3}/inputs/d6a42e1e-e0ce-4c9f-8c41-2d2715977338.wav`
+    : `${S3}/inputs/254f949b-d8a0-4794-affc-c4e3207a6b34.wav`;
+  const outputSrc = activeRec === 0
+    ? `${S3}/outputs/d6a42e1e-e0ce-4c9f-8c41-2d2715977338.wav`
+    : `${S3}/outputs/254f949b-d8a0-4794-affc-c4e3207a6b34.wav`;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Background */}
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute -top-[400px] left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-violet-600/[0.07] blur-[120px]" />
-        <div className="absolute -right-[200px] top-[20%] h-[600px] w-[400px] rounded-full bg-purple-600/[0.05] blur-[100px]" />
-      </div>
+    <div className="min-h-screen bg-zinc-950 text-zinc-200">
+      <div className="mx-auto max-w-3xl px-5 py-10">
 
-      <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        {/* Compact Hero */}
-        <header className="pt-10 pb-6 text-center" style={{ animation: "fadeInUp 0.5s ease-out" }}>
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
-              <Headphones className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-4xl font-bold tracking-tight text-transparent">
-              Fayez
-            </h1>
+        {/* Header */}
+        <header className="mb-10 text-center">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Headphones className="h-7 w-7 text-violet-400" />
+            <h1 className="text-4xl font-bold text-white tracking-tight">Fayez</h1>
           </div>
-          <p className="text-xs text-zinc-500 max-w-xl mx-auto">
-            AI-powered sitar → tabla accompaniment. Detects beats, tempo, tonic &amp; sections, then generates synchronized tabla in Teentaal.
-            <br /><span className="text-zinc-600">ENGLISH 106A — Fayez Navid</span>
+          <p className="text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">
+            Takes a raw <strong className="text-white">.wav sitar recording</strong>, detects its rhythm and structure,
+            then generates a synchronized <strong className="text-white">tabla accompaniment</strong> and mixes them together.
+          </p>
+          <p className="mt-2 text-sm text-zinc-500">
+            ENGLISH 106A — Fayez Navid
           </p>
         </header>
 
-        {/* ====== BEFORE / AFTER — TOP ====== */}
-        <section className="mb-8" style={{ animation: "fadeInUp 0.5s ease-out 200ms backwards" }}>
-          {/* Recording selector */}
-          <div className="flex justify-center gap-2 mb-4">
-            {["First Run", "Second Run"].map((label, i) => (
+        {/* ======== BEFORE / AFTER ======== */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-white mb-1">Listen: Before &amp; After</h2>
+          <p className="text-sm text-zinc-400 mb-4">
+            The same 14-minute sitar performance — original vs. with AI-generated tabla.
+          </p>
+
+          {/* Recording tabs */}
+          <div className="flex gap-2 mb-4">
+            {["Recording 1", "Recording 2"].map((label, i) => (
               <button
                 key={i}
                 onClick={() => setActiveRec(i)}
-                className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-all ${
+                className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
                   activeRec === i
-                    ? "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30"
-                    : "bg-white/[0.03] text-zinc-500 hover:text-zinc-300"
+                    ? "bg-zinc-800 text-white"
+                    : "bg-zinc-900 text-zinc-500 hover:text-zinc-300"
                 }`}
               >
                 {label}
@@ -85,228 +73,193 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Side by side players */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* BEFORE */}
-            <div className="rounded-xl border border-orange-500/20 bg-gradient-to-br from-orange-500/[0.04] to-amber-500/[0.02] p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/20">
-                  <AudioLines className="h-4 w-4 text-orange-400" />
-                </div>
+          {/* Players */}
+          <div className="space-y-4">
+            <div className="rounded-lg bg-zinc-900 p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <AudioLines className="h-5 w-5 text-zinc-400" />
                 <div>
-                  <p className="text-xs font-semibold text-orange-300">BEFORE</p>
-                  <p className="text-[10px] text-zinc-500">Original Sitar Recording</p>
+                  <p className="text-sm font-semibold text-white">Before — Original Sitar</p>
+                  <p className="text-xs text-zinc-500">244.8 MB · 44.1 kHz · Stereo · 14:50</p>
                 </div>
               </div>
-              <MusicPlayer key={`in-${activeRec}`} src={inputSrc} accent="orange" />
-              <div className="mt-2 flex gap-2 text-[9px] text-zinc-600">
-                <span>244.8 MB</span>
-                <span>44.1 kHz</span>
-                <span>Stereo</span>
-                <span>14:50</span>
-              </div>
+              <Player key={`in-${activeRec}`} src={inputSrc} color="zinc" />
             </div>
 
-            {/* AFTER */}
-            <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/[0.04] to-purple-500/[0.02] p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/20">
-                  <Blend className="h-4 w-4 text-violet-400" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-violet-300">AFTER</p>
-                  <p className="text-[10px] text-zinc-500">Sitar + AI Tabla</p>
-                </div>
+            <div className="flex items-center justify-center gap-3 py-1">
+              <div className="h-px flex-1 bg-zinc-800" />
+              <div className="flex items-center gap-1.5 text-xs font-medium text-violet-400">
+                <Waves className="h-3.5 w-3.5" />
+                AI adds tabla
+                <ArrowRight className="h-3.5 w-3.5" />
               </div>
-              <MusicPlayer key={`out-${activeRec}`} src={outputSrc} accent="violet" />
-              <div className="mt-2 flex gap-2 text-[9px] text-zinc-600">
-                <span>122.3 MB</span>
-                <span>Teentaal</span>
-                <span>131 BPM</span>
-                <span>Key: C#</span>
-              </div>
+              <div className="h-px flex-1 bg-zinc-800" />
             </div>
-          </div>
 
-          {/* Animated arrow between */}
-          <div className="hidden sm:flex absolute left-1/2 -translate-x-1/2 items-center justify-center" style={{ top: "calc(50% - 20px)", pointerEvents: "none" }}>
+            <div className="rounded-lg bg-zinc-900 p-5 ring-1 ring-violet-500/20">
+              <div className="flex items-center gap-3 mb-3">
+                <Blend className="h-5 w-5 text-violet-400" />
+                <div>
+                  <p className="text-sm font-semibold text-white">After — Sitar + Tabla</p>
+                  <p className="text-xs text-zinc-500">122.3 MB · Teentaal · 131 BPM · Key: C#</p>
+                </div>
+              </div>
+              <Player key={`out-${activeRec}`} src={outputSrc} color="violet" />
+            </div>
           </div>
         </section>
 
-        {/* ====== TRANSFORMATION PIPELINE ====== */}
-        <section className="mb-8" style={{ animation: "fadeInUp 0.5s ease-out 400ms backwards" }}>
-          <h2 className="text-sm font-semibold text-white mb-4 text-center">How It Works — 6 Steps</h2>
+        <hr className="border-zinc-800 mb-10" />
 
-          {/* Horizontal pipeline */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            {[
-              { icon: AudioLines, label: "Load", detail: "244.8 MB WAV → mono float32", color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/15" },
-              { icon: Zap, label: "Beats", detail: "1,872 beats at 130.8 BPM", color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/15" },
-              { icon: ScanSearch, label: "Sections", detail: "Alap / Jod / Jhala classified", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/15" },
-              { icon: Piano, label: "Tonic", detail: "C# (277.2 Hz) detected", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/15" },
-              { icon: Drum, label: "Tabla", detail: "Teentaal 16-beat cycle", color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/15" },
-              { icon: Blend, label: "Mix", detail: "60% tabla + 30% reverb", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/15" },
-            ].map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <div
-                  key={i}
-                  className={`rounded-lg border ${step.bg} p-3 text-center`}
-                  style={{ animation: `fadeInUp 0.4s ease-out ${500 + i * 100}ms backwards` }}
-                >
-                  <Icon className={`mx-auto h-5 w-5 ${step.color} mb-1.5`} />
-                  <p className={`text-[10px] font-bold ${step.color}`}>STEP {i + 1}</p>
-                  <p className="text-xs font-semibold text-white">{step.label}</p>
-                  <p className="text-[9px] text-zinc-500 mt-0.5">{step.detail}</p>
-                </div>
-              );
-            })}
+        {/* ======== HOW IT WORKS ======== */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-white mb-1">How It Works</h2>
+          <p className="text-sm text-zinc-400 mb-6">Six steps from raw audio to final mix.</p>
+
+          <div className="space-y-4">
+            <Step n={1} icon={<AudioLines className="h-5 w-5" />} title="Load Audio">
+              Read the 244.8 MB WAV file, convert stereo to mono, normalize to float32 arrays using <code>soundfile</code>.
+            </Step>
+            <Step n={2} icon={<Zap className="h-5 w-5" />} title="Detect Beats &amp; Tempo">
+              <code>librosa.beat.beat_track</code> analyzes onset strength to find <strong>1,872 beats</strong> at <strong>130.8 BPM</strong> across the 14:50 recording.
+            </Step>
+            <Step n={3} icon={<ScanSearch className="h-5 w-5" />} title="Classify Sections">
+              Measures spectral flux and RMS energy to label each segment:
+              <br />
+              <strong>Alap</strong> (24%) — slow, meditative. <strong>Jod</strong> (58%) — rhythmic pulse. <strong>Jhala</strong> (18%) — fast, climactic.
+            </Step>
+            <Step n={4} icon={<Piano className="h-5 w-5" />} title="Detect Tonic">
+              Chroma feature analysis finds the root note: <strong>C# at 277.2 Hz</strong>. The tabla&apos;s bass drum (bayan) is tuned to this frequency.
+            </Step>
+            <Step n={5} icon={<Drum className="h-5 w-5" />} title="Generate Tabla">
+              Maps the 16-beat <strong>Teentaal</strong> cycle onto every 16 detected beats using <code>pretty_midi</code>.
+              Volume varies by section — silent in alap, 60% in jod, 100% in jhala.
+            </Step>
+            <Step n={6} icon={<Blend className="h-5 w-5" />} title="Mix &amp; Output">
+              Synthesizes tabla MIDI to audio, mixes with original sitar at 60% level, applies 30% convolution reverb, renders final WAV.
+            </Step>
           </div>
         </section>
 
-        {/* ====== SECTION MAP ====== */}
-        <section className="mb-8" style={{ animation: "fadeInUp 0.5s ease-out 1100ms backwards" }}>
-          <h2 className="text-sm font-semibold text-white mb-3 text-center">
-            How Tabla Adapts to Each Section
-          </h2>
+        <hr className="border-zinc-800 mb-10" />
 
-          {/* Timeline bar */}
-          <div className="flex h-8 overflow-hidden rounded-lg ring-1 ring-white/[0.06] mb-3">
+        {/* ======== SECTION MAP ======== */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-white mb-1">How Tabla Adapts Per Section</h2>
+          <p className="text-sm text-zinc-400 mb-4">Click a section to see what the tabla does.</p>
+
+          {/* Timeline */}
+          <div className="flex h-10 rounded-lg overflow-hidden mb-4 ring-1 ring-zinc-800">
             {[
-              { name: "Alap", pct: 24, color: "bg-blue-500", text: "text-blue-200" },
-              { name: "Jod", pct: 58, color: "bg-violet-500", text: "text-violet-200" },
-              { name: "Jhala", pct: 18, color: "bg-amber-500", text: "text-amber-200" },
+              { name: "Alap", pct: 24, bg: "bg-zinc-700", active: "bg-zinc-600" },
+              { name: "Jod", pct: 58, bg: "bg-violet-900/60", active: "bg-violet-800/80" },
+              { name: "Jhala", pct: 18, bg: "bg-zinc-700", active: "bg-zinc-600" },
             ].map((s, i) => (
               <button
                 key={i}
-                className={`${s.color}/30 flex items-center justify-center text-[10px] font-bold transition-all hover:brightness-125 ${activeSection === i ? "ring-2 ring-white/40 z-10" : ""}`}
-                style={{ width: `${s.pct}%` }}
                 onClick={() => setActiveSection(i)}
+                className={`flex items-center justify-center text-sm font-medium transition-all ${
+                  activeSection === i ? `${s.active} text-white` : `${s.bg} text-zinc-400 hover:text-zinc-200`
+                }`}
+                style={{ width: `${s.pct}%` }}
               >
-                <span className={s.text}>{s.name} ({s.pct}%)</span>
+                {s.name} ({s.pct}%)
               </button>
             ))}
           </div>
 
-          {/* Section details */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {[
-              {
-                name: "Alap",
-                icon: "~",
-                color: "border-blue-500/25 bg-blue-500/[0.05]",
-                text: "text-blue-300",
-                heading: "Slow, meditative",
-                body: "No tabla. The sitar explores the raga freely. The AI detects low spectral flux and RMS energy, suppressing tabla to near silence.",
-                notation: "Sa — Re — Ga — Ma ——— (silence)",
-              },
-              {
-                name: "Jod",
-                icon: "||",
-                color: "border-violet-500/25 bg-violet-500/[0.05]",
-                text: "text-violet-300",
-                heading: "Rhythmic pulse",
-                body: "Tabla at 60% volume. Every detected beat gets a Teentaal stroke. The dha-dhin-dhin-dha cycle locks to the sitar's strumming rhythm.",
-                notation: "Dha Dhin Dhin Dha | Dha Dhin Dhin Dha",
-              },
-              {
-                name: "Jhala",
-                icon: "!!!",
-                color: "border-amber-500/25 bg-amber-500/[0.05]",
-                text: "text-amber-300",
-                heading: "Fast, climactic",
-                body: "Tabla at 100% volume. High spectral flux triggers maximum intensity. Both bayan (bass) and dayan (treble) sound with full force.",
-                notation: "DHA DHIN DHIN DHA | DHA TIN TIN TA !!!",
-              },
-            ].map((s, i) => (
-              <div
-                key={i}
-                className={`rounded-lg border ${s.color} p-3 transition-all ${activeSection === i ? "ring-1 ring-white/20 scale-[1.02]" : "opacity-60"}`}
-                onClick={() => setActiveSection(i)}
-                style={{ cursor: "pointer" }}
-              >
-                <p className={`text-xs font-bold ${s.text} mb-0.5`}>{s.name}</p>
-                <p className="text-[10px] font-medium text-white mb-1">{s.heading}</p>
-                <p className="text-[10px] text-zinc-400 mb-2">{s.body}</p>
-                <div className="rounded bg-black/30 px-2 py-1 font-mono text-[10px] text-zinc-300">
+          {/* Detail */}
+          {[
+            {
+              name: "Alap",
+              what: "Slow, free-flowing melodic exploration of the raga.",
+              tabla: "Tabla is silent or barely audible. The AI detects low spectral flux (little change in the sound spectrum) and low RMS energy, so it suppresses tabla volume to near zero. The sitar speaks alone.",
+              notation: "Sa — Re — Ga — Ma ——— (no tabla)",
+            },
+            {
+              name: "Jod",
+              what: "Rhythmic strumming with a steady, repetitive pulse.",
+              tabla: "Tabla plays at 60% volume. The AI locks the Teentaal cycle (dha-dhin-dhin-dha) to the sitar's detected beats. Each of the 16 bols maps to one beat, creating a steady rhythmic foundation under the sitar.",
+              notation: "Dha Dhin Dhin Dha | Dha Dhin Dhin Dha | Dha Tin Tin Ta | Ta Dhin Dhin Dha",
+            },
+            {
+              name: "Jhala",
+              what: "Fast, climactic passages with rapid-fire string plucking.",
+              tabla: "Tabla at full 100% volume. High spectral flux and peak RMS energy trigger maximum intensity. Both bayan (bass) and dayan (treble) sound with full force on every beat.",
+              notation: "DHA DHIN DHIN DHA | DHA DHIN DHIN DHA | DHA TIN TIN TA | TA DHIN DHIN DHA",
+            },
+          ].map((s, i) => (
+            activeSection === i && (
+              <div key={i} className="rounded-lg bg-zinc-900 p-5">
+                <h3 className="text-lg font-bold text-white mb-1">{s.name}</h3>
+                <p className="text-sm text-zinc-300 mb-3">{s.what}</p>
+                <p className="text-sm text-zinc-400 mb-3">{s.tabla}</p>
+                <pre className="rounded bg-zinc-800 px-4 py-2 text-sm font-mono text-zinc-300 overflow-x-auto">
                   {s.notation}
+                </pre>
+              </div>
+            )
+          ))}
+        </section>
+
+        <hr className="border-zinc-800 mb-10" />
+
+        {/* ======== TAAL PATTERN ======== */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-white mb-1">
+            Teentaal — 16 Beats Per Cycle
+          </h2>
+          <p className="text-sm text-zinc-400 mb-4">
+            The rhythmic framework mapped onto the sitar&apos;s beats. Each bol is a tabla stroke.
+          </p>
+
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { label: "Sam (beat 1)", bols: ["dha", "dhin", "dhin", "dha"], bass: [true, true, true, true] },
+              { label: "Vibhag 2", bols: ["dha", "dhin", "dhin", "dha"], bass: [true, true, true, true] },
+              { label: "Khali (open)", bols: ["dha", "tin", "tin", "ta"], bass: [false, false, false, false] },
+              { label: "Vibhag 4", bols: ["ta", "dhin", "dhin", "dha"], bass: [false, true, true, true] },
+            ].map((group, gi) => (
+              <div key={gi}>
+                <p className="text-xs font-medium text-zinc-500 mb-2 text-center">{group.label}</p>
+                <div className="space-y-1">
+                  {group.bols.map((bol, bi) => (
+                    <div
+                      key={bi}
+                      className={`rounded py-2 text-center text-sm font-mono font-semibold ${
+                        group.bass[bi]
+                          ? "bg-violet-500/15 text-violet-300"
+                          : "bg-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      {bol}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
-        </section>
 
-        {/* ====== TAAL PATTERN ====== */}
-        <section className="mb-8" style={{ animation: "fadeInUp 0.5s ease-out 1300ms backwards" }}>
-          <h2 className="text-sm font-semibold text-white mb-3 text-center">
-            <Drum className="inline h-4 w-4 text-amber-400 mr-1" />
-            Teentaal — 16 Beats Per Cycle
-          </h2>
-
-          <div className="grid grid-cols-4 gap-1 max-w-md mx-auto">
-            {[
-              { label: "Sam (X)", beats: TAAL.slice(0, 4) },
-              { label: "Vibhag 2", beats: TAAL.slice(4, 8) },
-              { label: "Khali (0)", beats: TAAL.slice(8, 12) },
-              { label: "Vibhag 4", beats: TAAL.slice(12, 16) },
-            ].map((group, gi) => (
-              <div key={gi} className="text-center">
-                <p className="text-[8px] font-bold text-zinc-600 mb-1">{group.label}</p>
-                {group.beats.map((b, bi) => (
-                  <div
-                    key={bi}
-                    className={`mb-0.5 rounded py-1 text-[11px] font-mono font-semibold ${
-                      b.bass
-                        ? "bg-violet-500/20 text-violet-300"
-                        : "bg-amber-500/20 text-amber-300"
-                    }`}
-                    style={{ animation: `fadeInUp 0.3s ease-out ${1400 + gi * 150 + bi * 40}ms backwards` }}
-                  >
-                    {b.bol}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-center gap-4 mt-2 text-[9px] text-zinc-500">
-            <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-violet-500/40" />Bayan + Dayan</span>
-            <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-amber-500/40" />Dayan only</span>
+          <div className="flex justify-center gap-6 mt-3 text-xs text-zinc-500">
+            <span><span className="mr-1.5 inline-block h-3 w-3 rounded bg-violet-500/15" />Both drums (bayan + dayan)</span>
+            <span><span className="mr-1.5 inline-block h-3 w-3 rounded bg-zinc-800" />Dayan only (treble)</span>
           </div>
         </section>
 
-        {/* ====== TONIC ====== */}
-        <section className="mb-8" style={{ animation: "fadeInUp 0.5s ease-out 1500ms backwards" }}>
-          <h2 className="text-sm font-semibold text-white mb-3 text-center">
-            <Piano className="inline h-4 w-4 text-emerald-400 mr-1" />
-            Detected Tonic: C# (277.2 Hz)
-          </h2>
-          <div className="flex justify-center gap-1">
-            {["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map((note) => (
-              <div
-                key={note}
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-[9px] font-bold transition-all ${
-                  note === "C#"
-                    ? "bg-emerald-500/30 text-emerald-300 ring-2 ring-emerald-500/50 scale-125"
-                    : "bg-white/[0.04] text-zinc-600"
-                }`}
-              >
-                {note}
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-[9px] text-zinc-600 mt-2">Tabla bayan tuned to resonate at the detected Sa (tonic)</p>
-        </section>
+        <hr className="border-zinc-800 mb-10" />
 
-        {/* Request Access */}
-        <section className="mb-12 rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-purple-500/5 p-6 text-center" style={{ animation: "fadeInUp 0.5s ease-out 1700ms backwards" }}>
-          <h3 className="text-sm font-semibold text-white">Request Access</h3>
-          <p className="mt-1 text-xs text-zinc-400">Want to process your own sitar recordings?</p>
+        {/* ======== REQUEST ACCESS ======== */}
+        <section className="mb-10 text-center">
+          <Mail className="mx-auto h-7 w-7 text-violet-400 mb-2" />
+          <h2 className="text-xl font-bold text-white mb-1">Request Access</h2>
+          <p className="text-sm text-zinc-400 mb-4">
+            Want to process your own sitar recordings? Get in touch.
+          </p>
           <a
             href="mailto:stardroplin@stanford.edu"
-            className="mt-3 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-2 text-xs font-medium text-white shadow-lg shadow-violet-500/25 transition-all hover:from-violet-500 hover:to-purple-500"
+            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-violet-500"
           >
-            <Mail className="h-3.5 w-3.5" />
+            <Mail className="h-4 w-4" />
             Fayez Navid — stardroplin@stanford.edu
           </a>
         </section>
@@ -315,42 +268,60 @@ export default function Home() {
   );
 }
 
-/* ---- Apple Music Style Player ---- */
-function MusicPlayer({ src, accent }: { src: string; accent: "orange" | "violet" }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
+/* ---- Step ---- */
+function Step({ n, icon, title, children }: { n: number; icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-4">
+      <div className="flex flex-col items-center">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-zinc-400">
+          {icon}
+        </div>
+        <div className="mt-1 w-px flex-1 bg-zinc-800" />
+      </div>
+      <div className="pb-4">
+        <p className="text-xs font-medium text-zinc-500 mb-0.5">Step {n}</p>
+        <h3 className="text-base font-semibold text-white mb-1">{title}</h3>
+        <p className="text-sm text-zinc-400 leading-relaxed">{children}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ---- Player ---- */
+function Player({ src, color }: { src: string; color: "zinc" | "violet" }) {
+  const ref = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [loaded, setLoaded] = useState(false);
+  const [time, setTime] = useState(0);
+  const [dur, setDur] = useState(0);
 
-  const ac = accent === "orange"
-    ? { btn: "bg-orange-500 hover:bg-orange-400 shadow-orange-500/30", bar: "bg-orange-500", barBg: "bg-orange-500/20", dot: "bg-orange-400" }
-    : { btn: "bg-violet-500 hover:bg-violet-400 shadow-violet-500/30", bar: "bg-violet-500", barBg: "bg-violet-500/20", dot: "bg-violet-400" };
+  const accent = color === "violet"
+    ? { btn: "bg-violet-600 hover:bg-violet-500", bar: "bg-violet-500", bg: "bg-violet-500/20" }
+    : { btn: "bg-zinc-600 hover:bg-zinc-500", bar: "bg-zinc-500", bg: "bg-zinc-700" };
 
-  const togglePlay = useCallback(() => {
-    const a = audioRef.current;
+  const toggle = useCallback(() => {
+    const a = ref.current;
     if (!a) return;
-    if (playing) a.pause(); else a.play();
+    if (playing) a.pause(); else a.play().catch(() => {});
     setPlaying(!playing);
   }, [playing]);
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const a = audioRef.current;
-    if (!a || !duration) return;
+    const a = ref.current;
+    if (!a || !dur) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    a.currentTime = ((e.clientX - rect.left) / rect.width) * duration;
+    a.currentTime = ((e.clientX - rect.left) / rect.width) * dur;
   };
 
   useEffect(() => {
-    const a = audioRef.current;
+    const a = ref.current;
     if (!a) return;
-    const onTime = () => setCurrentTime(a.currentTime);
-    const onMeta = () => { setDuration(a.duration); setLoaded(true); };
-    const onEnd = () => setPlaying(false);
-    a.addEventListener("timeupdate", onTime);
-    a.addEventListener("loadedmetadata", onMeta);
-    a.addEventListener("ended", onEnd);
-    return () => { a.removeEventListener("timeupdate", onTime); a.removeEventListener("loadedmetadata", onMeta); a.removeEventListener("ended", onEnd); };
+    const t = () => setTime(a.currentTime);
+    const m = () => setDur(a.duration);
+    const e = () => setPlaying(false);
+    a.addEventListener("timeupdate", t);
+    a.addEventListener("loadedmetadata", m);
+    a.addEventListener("ended", e);
+    return () => { a.removeEventListener("timeupdate", t); a.removeEventListener("loadedmetadata", m); a.removeEventListener("ended", e); };
   }, []);
 
   const fmt = (s: number) => {
@@ -358,30 +329,27 @@ function MusicPlayer({ src, accent }: { src: string; accent: "orange" | "violet"
     return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
   };
 
-  const pct = duration ? (currentTime / duration) * 100 : 0;
+  const pct = dur ? (time / dur) * 100 : 0;
 
   return (
-    <div className="rounded-lg bg-black/20 p-2.5 ring-1 ring-white/[0.06]">
-      <audio ref={audioRef} preload="metadata" src={src} />
-      <div className="flex items-center gap-2.5">
-        <button onClick={() => { if (audioRef.current) audioRef.current.currentTime = 0; }} className="text-zinc-500 hover:text-zinc-300">
-          <SkipBack className="h-3.5 w-3.5" />
+    <div>
+      <audio ref={ref} preload="metadata" src={src} />
+      <div className="flex items-center gap-3">
+        <button onClick={() => { if (ref.current) ref.current.currentTime = 0; }} className="text-zinc-500 hover:text-zinc-300">
+          <SkipBack className="h-4 w-4" />
         </button>
-        <button onClick={togglePlay} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${ac.btn} shadow-lg transition-all active:scale-95`}>
-          {playing ? <Pause className="h-3.5 w-3.5 text-white" /> : <Play className="h-3.5 w-3.5 text-white ml-0.5" />}
+        <button onClick={toggle} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${accent.btn} transition-all active:scale-95`}>
+          {playing ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white ml-0.5" />}
         </button>
-        <div className="flex-1 min-w-0">
-          <div className={`h-1.5 w-full cursor-pointer rounded-full ${ac.barBg}`} onClick={seek}>
-            <div className={`h-full rounded-full ${ac.bar} relative transition-[width] duration-200`} style={{ width: `${pct}%` }}>
-              {playing && <div className={`absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 rounded-full ${ac.dot} ring-2 ring-background`} />}
-            </div>
+        <div className="flex-1">
+          <div className={`h-2 w-full cursor-pointer rounded-full ${accent.bg}`} onClick={seek}>
+            <div className={`h-full rounded-full ${accent.bar} transition-[width] duration-200`} style={{ width: `${pct}%` }} />
           </div>
-          <div className="mt-0.5 flex justify-between text-[9px] font-mono text-zinc-600">
-            <span>{fmt(currentTime)}</span>
-            <span>{loaded ? fmt(duration) : "..."}</span>
+          <div className="mt-1 flex justify-between text-xs text-zinc-500 font-mono">
+            <span>{fmt(time)}</span>
+            <span>{dur ? fmt(dur) : "Loading..."}</span>
           </div>
         </div>
-        <Volume2 className="h-3.5 w-3.5 text-zinc-600" />
       </div>
     </div>
   );
