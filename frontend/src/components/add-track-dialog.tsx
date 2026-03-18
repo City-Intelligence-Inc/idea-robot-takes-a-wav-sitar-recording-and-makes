@@ -41,6 +41,8 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
+  const [progressPct, setProgressPct] = useState(0);
+  const [stage, setStage] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [taal, setTaal] = useState("teentaal");
@@ -80,7 +82,9 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
     if (!file) return;
 
     setLoading(true);
-    setProgress("Uploading...");
+    setProgressPct(0);
+    setStage("upload");
+    setProgress("Uploading file...");
 
     try {
       const formData = new FormData();
@@ -89,19 +93,47 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
       formData.append("tabla_level", tablaLevel);
       formData.append("reverb", reverb);
 
-      setProgress("Processing sitar → tabla (this may take a few minutes)...");
+      // Simulate staged progress since the backend does it all in one request
+      const stages = [
+        { pct: 15, ms: 500, stage: "upload", msg: "Uploading to server..." },
+        { pct: 25, ms: 2000, stage: "upload", msg: "Saving to S3..." },
+        { pct: 35, ms: 4000, stage: "analyze", msg: "Detecting beats & tempo..." },
+        { pct: 45, ms: 8000, stage: "analyze", msg: "Classifying sections (alap, jod, jhala)..." },
+        { pct: 55, ms: 15000, stage: "analyze", msg: "Finding tonic note..." },
+        { pct: 65, ms: 25000, stage: "generate", msg: "Generating tabla pattern..." },
+        { pct: 75, ms: 40000, stage: "generate", msg: "Placing tabla strokes on beats..." },
+        { pct: 82, ms: 60000, stage: "mix", msg: "Mixing sitar + tabla tracks..." },
+        { pct: 88, ms: 90000, stage: "mix", msg: "Adding reverb & finalizing..." },
+        { pct: 92, ms: 120000, stage: "save", msg: "Uploading output to S3..." },
+      ];
+
+      const timers: ReturnType<typeof setTimeout>[] = [];
+      for (const s of stages) {
+        timers.push(
+          setTimeout(() => {
+            setProgressPct(s.pct);
+            setStage(s.stage);
+            setProgress(s.msg);
+          }, s.ms)
+        );
+      }
 
       const res = await fetch(`${API_BASE}/process/`, {
         method: "POST",
         body: formData,
       });
 
+      // Clear staged timers
+      timers.forEach(clearTimeout);
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: "Upload failed" }));
         throw new Error(err.detail || "Upload failed");
       }
 
-      setProgress("Done!");
+      setProgressPct(100);
+      setStage("done");
+      setProgress("Done! Sitar + Tabla track created.");
       setFile(null);
       setTaal("teentaal");
       setTablaLevel("0.6");
@@ -248,8 +280,46 @@ export function AddTrackDialog({ onAdd }: AddTrackDialogProps) {
 
           {/* Progress */}
           {loading && progress && (
-            <div className="rounded-lg bg-violet-500/10 px-3 py-2 text-xs text-violet-300">
-              {progress}
+            <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+              {/* Stage indicators */}
+              <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider">
+                {["upload", "analyze", "generate", "mix", "save", "done"].map((s, i, arr) => {
+                  const currentIdx = arr.indexOf(stage);
+                  const thisIdx = i;
+                  return (
+                    <span
+                      key={s}
+                      className={`transition-colors ${
+                        s === stage
+                          ? "font-bold text-violet-400"
+                          : thisIdx < currentIdx
+                          ? "text-emerald-400"
+                          : "text-zinc-600"
+                      }`}
+                    >
+                      {s}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${
+                    stage === "done"
+                      ? "bg-gradient-to-r from-emerald-500 to-green-500"
+                      : "bg-gradient-to-r from-violet-500 to-purple-500"
+                  }`}
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+
+              {/* Message */}
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-zinc-400">{progress}</p>
+                <span className="text-xs font-mono text-zinc-500">{progressPct}%</span>
+              </div>
             </div>
           )}
 
